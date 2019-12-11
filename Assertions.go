@@ -19,7 +19,7 @@ func (a *Assertions) IsEqualTo(y interface{}) {
 		return
 	}
 
-	formattedFailure(a.t, "Expected %v to be equal to %v", a.x, y)
+	formattedFailure(a.t, "Expected %v to be equal to %v\nx: %v\ny: %v", a.x, y, typeNameFor(a.x), typeNameFor(y))
 }
 
 // IsNotEqualTo fails the test if y is equal to the subject, x.
@@ -30,7 +30,7 @@ func (a *Assertions) IsNotEqualTo(y interface{}) {
 		return
 	}
 
-	formattedFailure(a.t, "Expected %v to not be equal to %v", a.x, y)
+	formattedFailure(a.t, "Expected %v to not be equal to %v\nx: %v\ny: %v", a.x, y, typeNameFor(a.x), typeNameFor(y))
 }
 
 // IsNil fails the test if the subject, x, is not nil.
@@ -41,7 +41,7 @@ func (a *Assertions) IsNil() {
 		return
 	}
 
-	formattedFailure(a.t, "Expected %v to be <nil>", a.x)
+	formattedFailure(a.t, "Expected %v to be <nil>\nx: %v", a.x, typeNameFor(a.x))
 }
 
 // IsNotNil fails the test if the subject, x, is nil.
@@ -52,7 +52,39 @@ func (a *Assertions) IsNotNil() {
 		return
 	}
 
-	formattedFailure(a.t, "Expected subject to not be <nil>, but was")
+	formattedFailure(a.t, "Expected subject to not be <nil>, but was\nx: %v", typeNameFor(a.x))
+}
+
+// IsTrue fails the test if the subject, x, is not a boolean, or is false.
+func (a *Assertions) IsTrue() {
+	a.t.Helper()
+
+	b, ok := baseBooleanTest(a.x)
+	if !ok {
+		formattedFailure(a.t, "Expected <true>, but was not a boolean\nx: %v", typeNameFor(a.x))
+		return
+	}
+
+	if !b {
+		formattedFailure(a.t, "Expected <true>, but was <false>")
+		return
+	}
+}
+
+// IsFalse fails the test if the subject, x, is not a boolean, or is true.
+func (a *Assertions) IsFalse() {
+	a.t.Helper()
+
+	b, ok := baseBooleanTest(a.x)
+	if !ok {
+		formattedFailure(a.t, "Expected <false>, but was not a boolean\nx: %v", typeNameFor(a.x))
+		return
+	}
+
+	if b {
+		formattedFailure(a.t, "Expected <false>, but was <true>")
+		return
+	}
 }
 
 func baseEqualityTest(x interface{}, y interface{}) bool {
@@ -72,9 +104,22 @@ func baseNilTest(x interface{}) bool {
 	return false
 }
 
+func baseBooleanTest(x interface{}) (bool, bool) {
+	b, ok := x.(bool)
+	if !ok {
+		return false, false
+	}
+
+	return b, true
+}
+
 func formattedFailure(t T, format string, args ...interface{}) {
 	t.Helper()
 
 	name := t.Name()
 	t.Fatalf("\n\n× %v\n%v\n\n", name, fmt.Sprintf(format, args...))
+}
+
+func typeNameFor(x interface{}) string {
+	return fmt.Sprintf("%v", reflect.TypeOf(x))
 }

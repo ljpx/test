@@ -15,6 +15,7 @@ func TestIsEqualTo(t *testing.T) {
 	}{
 		{x: 4, y: 3, pass: false},
 		{x: 4, y: 4, pass: true},
+		{x: 4, y: int16(4), pass: false},
 		{x: "Hello", y: 4, pass: false},
 		{x: "Hello", y: "Hello", pass: true},
 		{x: "Hellp", y: "Hello", pass: false},
@@ -123,6 +124,96 @@ func TestIsNotNil(t *testing.T) {
 	}
 }
 
+func TestIsTrueNonBoolean(t *testing.T) {
+	testCases := []interface{}{
+		4,
+		"Hello",
+		nil,
+		io.Writer(nil),
+		(*io.Writer)(nil),
+	}
+
+	for _, testCase := range testCases {
+		recorder := NewRecorder()
+		That(recorder, testCase).IsTrue()
+
+		assertFailed(t, recorder)
+		assertFailureMessage(t, recorder, "Expected <true>, but was not a boolean")
+		assertHelperCount(t, recorder, 3)
+	}
+}
+
+func TestIsTrue(t *testing.T) {
+	testCases := []struct {
+		x    interface{}
+		pass bool
+	}{
+		{x: 4 == 4, pass: true},
+		{x: "Hello" == "Hello", pass: true},
+		{x: 4 == 5, pass: false},
+		{x: true, pass: true},
+	}
+
+	for _, testCase := range testCases {
+		recorder := NewRecorder()
+		That(recorder, testCase.x).IsTrue()
+
+		if !testCase.pass {
+			assertFailed(t, recorder)
+			assertFailureMessage(t, recorder, "Expected <true>, but was <false>")
+			assertHelperCount(t, recorder, 3)
+		} else {
+			assertPassed(t, recorder)
+			assertHelperCount(t, recorder, 2)
+		}
+	}
+}
+
+func TestIsFalseNonBoolean(t *testing.T) {
+	testCases := []interface{}{
+		4,
+		"Hello",
+		nil,
+		io.Writer(nil),
+		(*io.Writer)(nil),
+	}
+
+	for _, testCase := range testCases {
+		recorder := NewRecorder()
+		That(recorder, testCase).IsFalse()
+
+		assertFailed(t, recorder)
+		assertFailureMessage(t, recorder, "Expected <false>, but was not a boolean")
+		assertHelperCount(t, recorder, 3)
+	}
+}
+
+func TestIsFalse(t *testing.T) {
+	testCases := []struct {
+		x    interface{}
+		pass bool
+	}{
+		{x: 4 == 4, pass: false},
+		{x: "Hello" == "Hello", pass: false},
+		{x: 4 == 5, pass: true},
+		{x: true, pass: false},
+	}
+
+	for _, testCase := range testCases {
+		recorder := NewRecorder()
+		That(recorder, testCase.x).IsFalse()
+
+		if !testCase.pass {
+			assertFailed(t, recorder)
+			assertFailureMessage(t, recorder, "Expected <false>, but was <true>")
+			assertHelperCount(t, recorder, 3)
+		} else {
+			assertPassed(t, recorder)
+			assertHelperCount(t, recorder, 2)
+		}
+	}
+}
+
 func assertFailed(t *testing.T, recorder *Recorder) {
 	t.Helper()
 
@@ -153,7 +244,7 @@ func assertFailureMessage(t *testing.T, recorder *Recorder, format string, args 
 	}
 
 	failMessage := strings.TrimSpace(spl[1])
-	if failMessage != message {
+	if !strings.Contains(failMessage, message) {
 		t.Fatalf("expected failure message to be like '%v' but was like '%v'", message, failMessage)
 	}
 }
