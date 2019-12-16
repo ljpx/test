@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestIsEqualTo(t *testing.T) {
@@ -212,6 +213,83 @@ func TestIsFalse(t *testing.T) {
 			assertHelperCount(t, recorder, 2)
 		}
 	}
+}
+
+func TestOrderedComparisons(t *testing.T) {
+	fixedTime := time.Now()
+
+	testCases := []struct {
+		x   interface{}
+		y   interface{}
+		gt  bool
+		gte bool
+		lt  bool
+		lte bool
+	}{
+		{x: 5, y: 5, gt: false, gte: true, lt: false, lte: true},
+		{x: 4, y: 5, gt: false, gte: false, lt: true, lte: true},
+		{x: 6, y: 5, gt: true, gte: true, lt: false, lte: false},
+		{x: 5.5, y: 5.5, gt: false, gte: true, lt: false, lte: true},
+		{x: 4.5, y: 5.5, gt: false, gte: false, lt: true, lte: true},
+		{x: 6.5, y: 5.5, gt: true, gte: true, lt: false, lte: false},
+		{x: uint8(5), y: int64(5), gt: false, gte: true, lt: false, lte: true},
+		{x: int16(4), y: byte(5), gt: false, gte: false, lt: true, lte: true},
+		{x: rune(6), y: uintptr(5), gt: true, gte: true, lt: false, lte: false},
+		{x: float64(5.5), y: float32(5.5), gt: false, gte: true, lt: false, lte: true},
+		{x: 4.5, y: float64(5.5), gt: false, gte: false, lt: true, lte: true},
+		{x: float32(6.5), y: 5.5, gt: true, gte: true, lt: false, lte: false},
+		{x: time.Now().Add(time.Second), y: time.Now(), gt: true, gte: true, lt: false, lte: false},
+		{x: time.Now().Add(time.Second), y: time.Now().Add(time.Minute), gt: false, gte: false, lt: true, lte: true},
+		{x: fixedTime, y: fixedTime, gt: false, gte: true, lt: false, lte: true},
+	}
+
+	for _, testCase := range testCases {
+		rgt := NewRecorder()
+		rgte := NewRecorder()
+		rlt := NewRecorder()
+		rlte := NewRecorder()
+
+		That(rgt, testCase.x).IsGreaterThan(testCase.y)
+		That(rgte, testCase.x).IsGreaterThanOrEqualTo(testCase.y)
+		That(rlt, testCase.x).IsLessThan(testCase.y)
+		That(rlte, testCase.x).IsLessThanOrEqualTo(testCase.y)
+
+		if testCase.gt {
+			assertPassed(t, rgt)
+		} else {
+			assertFailed(t, rgt)
+		}
+
+		if testCase.gte {
+			assertPassed(t, rgte)
+		} else {
+			assertFailed(t, rgte)
+		}
+
+		if testCase.lt {
+			assertPassed(t, rlt)
+		} else {
+			assertFailed(t, rlt)
+		}
+
+		if testCase.lte {
+			assertPassed(t, rlte)
+		} else {
+			assertFailed(t, rlte)
+		}
+	}
+}
+
+func TestNonOrderedTypes(t *testing.T) {
+	// Arrange.
+	recorder := NewRecorder()
+
+	// Act.
+	That(recorder, 5.5).IsGreaterThan(5)
+
+	// Assert.
+	assertFailed(t, recorder)
+	assertFailureMessage(t, recorder, "Expected two comparable types\nx: float64\ny: int")
 }
 
 func assertFailed(t *testing.T, recorder *Recorder) {
