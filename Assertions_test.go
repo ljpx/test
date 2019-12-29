@@ -125,6 +125,85 @@ func TestIsNotNil(t *testing.T) {
 	}
 }
 
+func TestHasEquivalentSequenceToExpectsSlices(t *testing.T) {
+	// Arrange.
+	x := 5
+	y := struct{}{}
+
+	// Act.
+	recorder := NewRecorder()
+
+	That(recorder, x).HasEquivalentSequenceTo(y)
+
+	// Assert.
+	assertFailed(t, recorder)
+	assertHelperCount(t, recorder, 3)
+	assertFailureMessage(t, recorder, "Expected both subject and comparator to be slices, but subject was a int and comparator was a struct")
+}
+
+func TestHasEquivalentSequenceToExpectsSameSliceType(t *testing.T) {
+	// Arrange.
+	x := []int{1, 2, 3}
+	y := []byte{1, 2, 3}
+
+	// Act.
+	recorder := NewRecorder()
+
+	That(recorder, x).HasEquivalentSequenceTo(y)
+
+	// Assert.
+	assertFailed(t, recorder)
+	assertHelperCount(t, recorder, 3)
+	assertFailureMessage(t, recorder, "Expected subject to have type like []uint8 but was []int")
+}
+
+func TestHasEquivalentSequenceToExpectsEqualLength(t *testing.T) {
+	// Arrange.
+	x := []byte{1, 2, 3}
+	y := []byte{1, 2, 3, 4}
+
+	// Act.
+	recorder := NewRecorder()
+
+	That(recorder, x).HasEquivalentSequenceTo(y)
+
+	// Assert.
+	assertFailed(t, recorder)
+	assertHelperCount(t, recorder, 3)
+	assertFailureMessage(t, recorder, "Expected subject to have length 4 but had length 3")
+}
+
+func TestHasEquivalentSequenceToExpectsSameSequence(t *testing.T) {
+	// Arrange.
+	x := []byte{1, 2, 3}
+	y := []byte{1, 2, 4}
+
+	// Act.
+	recorder := NewRecorder()
+
+	That(recorder, x).HasEquivalentSequenceTo(y)
+
+	// Assert.
+	assertFailed(t, recorder)
+	assertHelperCount(t, recorder, 3)
+	assertFailureMessage(t, recorder, "Expected sequence of elements in\n\n[1 2 3]\n\nto be equal to sequence of elements in\n\n[1 2 4]")
+}
+
+func TestHasEquivalentSequenceToSuccess(t *testing.T) {
+	// Arrange.
+	x := []byte{1, 2, 3}
+	y := []byte{1, 2, 3}
+
+	// Act.
+	recorder := NewRecorder()
+
+	That(recorder, x).HasEquivalentSequenceTo(y)
+
+	// Assert.
+	assertPassed(t, recorder)
+	assertHelperCount(t, recorder, 2)
+}
+
 func TestIsTrueNonBoolean(t *testing.T) {
 	testCases := []interface{}{
 		4,

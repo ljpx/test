@@ -56,6 +56,36 @@ func (a *Assertions) IsNotNil() {
 	formattedFailure(a.t, "Expected subject to not be <nil>, but was\nx: %v", typeNameFor(a.x))
 }
 
+// HasEquivalentSequenceTo fails the test if the subject, x, does not have the
+// exact same sequence of values as y.  Only for slices.
+func (a *Assertions) HasEquivalentSequenceTo(y interface{}) {
+	a.t.Helper()
+
+	xt := reflect.TypeOf(a.x)
+	yt := reflect.TypeOf(y)
+	xv := reflect.ValueOf(a.x)
+	yv := reflect.ValueOf(y)
+
+	if xt.Kind() != reflect.Slice || yt.Kind() != reflect.Slice {
+		formattedFailure(a.t, "Expected both subject and comparator to be slices, but subject was a %v and comparator was a %v", xt.Kind(), yt.Kind())
+		return
+	}
+
+	if xt.Elem() != yt.Elem() {
+		formattedFailure(a.t, "Expected subject to have type like %v but was %v", yt, xt)
+		return
+	}
+
+	if xv.Len() != yv.Len() {
+		formattedFailure(a.t, "Expected subject to have length %v but had length %v", yv.Len(), xv.Len())
+		return
+	}
+
+	if !reflect.DeepEqual(a.x, y) {
+		formattedFailure(a.t, "Expected sequence of elements in\n\n%v\n\nto be equal to sequence of elements in\n\n%v", a.x, y)
+	}
+}
+
 // IsTrue fails the test if the subject, x, is not a boolean, or is false.
 func (a *Assertions) IsTrue() {
 	a.t.Helper()
